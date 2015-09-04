@@ -1,6 +1,11 @@
 package net.pladform.random;
 
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -12,6 +17,7 @@ public class BaseGenerator {
     private Random random;
     private String characterSet = " \tabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890`~!@#$%^&*()_+[]\\{}|;':\",.<>/?";
     private AtomicLong id;
+    private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     public BaseGenerator() {
         random = new Random();
@@ -28,8 +34,28 @@ public class BaseGenerator {
         else if (type.equals(Long.class)) {
             return (T) randomLong();
         }
+        else if (type.equals(Date.class)) {
+            return (T) randomDate();
+        }
         else {
             throw new IllegalArgumentException("Don't know how to generate a random " + type.getName());
+        }
+    }
+    public <T> boolean isBaseType(Class<T> type) {
+        if (type.equals(String.class)) {
+            return true;
+        }
+        else if (type.equals(Integer.class)) {
+            return true;
+        }
+        else if (type.equals(Long.class)) {
+            return true;
+        }
+        else if (type.equals(Date.class)) {
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
@@ -82,6 +108,25 @@ public class BaseGenerator {
 
     public Long nextId() {
         return id.getAndIncrement();
+    }
+
+    public Date randomDate(String fromDate, String toDate) {
+        long lowerBound = dateTimeFormatter.parseDateTime(fromDate).getMillis();
+        DateTime upperBoundDateTime = dateTimeFormatter.parseDateTime(toDate);
+        long upperBound = upperBoundDateTime.getMillis();
+        long range = upperBound - lowerBound + 1;
+        return upperBoundDateTime.minus(randomLong(0, range)).toDate();
+    }
+
+    public Date randomDate(String fromDate) {
+        DateTime now = new DateTime(new Date());
+        return randomDate(fromDate, now.toString(dateTimeFormatter));
+    }
+
+    public Date randomDate() {
+        DateTime epoch = new DateTime(0L);
+        DateTime now = new DateTime(new Date());
+        return randomDate(epoch.toString(dateTimeFormatter), now.toString(dateTimeFormatter));
     }
 
     // private methods

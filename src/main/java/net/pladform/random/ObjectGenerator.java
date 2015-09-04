@@ -31,19 +31,23 @@ public class ObjectGenerator extends BaseGenerator {
         return t;
     }
 
-    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException {
+    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         boolean done = processCustom(methodNameFunctions, method, t);
         if (!done) {
             processNormal(method, t);
         }
     }
 
-    protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException {
+    protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         if (method.getName().startsWith("set") && method.getName().length() > 3) {
             Class[] types = method.getParameterTypes();
             Object[] params = new Object[types.length];
             for (int i = 0; i < types.length; i++) {
-                params[i] = random(types[i]);
+                if (isBaseType(types[i])) {
+                    params[i] = random(types[i]);
+                } else {
+                    params[i] = generate(types[i]);
+                }
             }
             method.invoke(t, params);
             return true;
