@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.concurrent.Callable;
 
 public class ObjectGeneratorTest {
 
@@ -93,8 +93,13 @@ public class ObjectGeneratorTest {
 
     @Test
     public void testCustomFunction() throws Exception {
-        Map<String, Function> fns = new HashMap<>();
-        fns.put("setName", klass -> "blahhh");
+        Map<String, Callable> fns = new HashMap<>();
+        fns.put("setName", new Callable() {
+                    @Override
+                    public Object call() throws Exception {
+                        return "blahhh";
+                    }
+                });
         MyObject2 a = objectGenerator.generate(MyObject2.class, fns);
         Assert.assertEquals("blahhh", a.getName());
     }

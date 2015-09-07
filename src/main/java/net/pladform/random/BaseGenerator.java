@@ -5,6 +5,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -17,6 +18,7 @@ public class BaseGenerator {
     private String characterSet = " \tabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890`~!@#$%^&*()_+[]\\{}|;':\",.<>/?";
     private AtomicLong id;
     private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private List<String> dictionary;
 
     public BaseGenerator() {
         random = new Random();
@@ -163,6 +165,22 @@ public class BaseGenerator {
         return iter.next();
     }
 
+    public String words(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("word count must be > 0.");
+        }
+        if (dictionary == null) {
+            loadDictionary();
+        }
+        StringBuilder words = new StringBuilder();
+        words.append(choose(dictionary));
+        for (int i = 1; i < count; i++) {
+            words.append(" ");
+            words.append(choose(dictionary));
+        }
+        return words.toString();
+    }
+
     // private methods
     // ------------------------------------
 
@@ -174,6 +192,30 @@ public class BaseGenerator {
             val = bits % n;
         } while (bits - val + (n - 1) < 0L);
         return val;
+    }
+
+    private void loadDictionary() {
+        dictionary = new ArrayList<>(60400);
+        BufferedReader reader = null;
+        try {
+            InputStream fis = RootObject.class.getResourceAsStream("dict.txt");
+            reader = new BufferedReader(new InputStreamReader(fis));
+            String line = reader.readLine();
+            while (line != null) {
+                dictionary.add(line);
+                line = reader.readLine();
+            }
+        } catch (IOException e) {
+            // TODO: handle exception
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 }

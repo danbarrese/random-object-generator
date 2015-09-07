@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.concurrent.Callable;
 
 /**
  * Generates objects using reflection.
@@ -24,10 +24,12 @@ public class ObjectGenerator extends BaseGenerator {
             return t;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new FailedRandomObjectGenerationException(e);
+        } catch (Exception e) {
+            throw new FailedRandomObjectGenerationException(e);
         }
     }
 
-    public <T> T generate(Class<T> klass, Map<String, Function> methodNameFunctions, Class<T>... constructorTypes) {
+    public <T> T generate(Class<T> klass, Map<String, Callable> methodNameFunctions, Class<T>... constructorTypes) {
         try {
             T t = klass.getConstructor(constructorTypes).newInstance();
             Method[] methods = klass.getMethods();
@@ -37,10 +39,12 @@ public class ObjectGenerator extends BaseGenerator {
             return t;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new FailedRandomObjectGenerationException(e);
+        } catch (Exception e) {
+            throw new FailedRandomObjectGenerationException(e);
         }
     }
 
-    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException {
+    protected <T> void processMethod(Method method, Map<String, Callable> methodNameFunctions, T t) throws Exception {
         boolean done = processCustom(methodNameFunctions, method, t);
         if (!done) {
             processNormal(method, t);
@@ -66,9 +70,9 @@ public class ObjectGenerator extends BaseGenerator {
         }
     }
 
-    protected <T> boolean processCustom(Map<String, Function> methodNameFunctions, Method method, T t) throws InvocationTargetException, IllegalAccessException {
+    protected <T> boolean processCustom(Map<String, Callable> methodNameFunctions, Method method, T t) throws Exception {
         if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
-            Object params = methodNameFunctions.get(method.getName()).apply(t);
+            Object params = methodNameFunctions.get(method.getName()).call();
             if (isBaseType(params)) {
                 method.invoke(t, params);
             } else {
@@ -80,5 +84,20 @@ public class ObjectGenerator extends BaseGenerator {
             return false;
         }
     }
+
+//    protected <T> boolean processCustom(Map<String, Function> methodNameFunctions, Method method, T t) throws InvocationTargetException, IllegalAccessException {
+//        if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
+//            Object params = methodNameFunctions.get(method.getName()).apply(t);
+//            if (isBaseType(params)) {
+//                method.invoke(t, params);
+//            } else {
+//                method.invoke(t, generate(params.getClass()));
+//            }
+//            return true;
+//        }
+//        else {
+//            return false;
+//        }
+//    }
 
 }
