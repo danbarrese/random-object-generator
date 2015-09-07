@@ -2,6 +2,7 @@ package net.pladform.random;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -13,32 +14,40 @@ public class ObjectGenerator extends BaseGenerator {
     public ObjectGenerator() {
     }
 
-    public <T> T generate(Class<T> klass, Class<T>... constructorTypes) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        T t = klass.getConstructor(constructorTypes).newInstance();
-        Method[] methods = klass.getMethods();
-        for (Method method : methods) {
-            processMethod(method, null, t);
+    public <T> T generate(Class<T> klass, Class<T>... constructorTypes) {
+        try {
+            T t = klass.getConstructor(constructorTypes).newInstance();
+            Method[] methods = klass.getMethods();
+            for (Method method : methods) {
+                processMethod(method, null, t);
+            }
+            return t;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new FailedRandomObjectGenerationException(e);
         }
-        return t;
     }
 
-    public <T> T generate(Class<T> klass, Map<String, Function> methodNameFunctions, Class<T>... constructorTypes) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        T t = klass.getConstructor(constructorTypes).newInstance();
-        Method[] methods = klass.getMethods();
-        for (Method method : methods) {
-            processMethod(method, methodNameFunctions, t);
+    public <T> T generate(Class<T> klass, Map<String, Function> methodNameFunctions, Class<T>... constructorTypes) {
+        try {
+            T t = klass.getConstructor(constructorTypes).newInstance();
+            Method[] methods = klass.getMethods();
+            for (Method method : methods) {
+                processMethod(method, methodNameFunctions, t);
+            }
+            return t;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new FailedRandomObjectGenerationException(e);
         }
-        return t;
     }
 
-    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException {
         boolean done = processCustom(methodNameFunctions, method, t);
         if (!done) {
             processNormal(method, t);
         }
     }
 
-    protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+    protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException {
         if (method.getName().startsWith("set") && method.getName().length() > 3) {
             Class[] types = method.getParameterTypes();
             Object[] params = new Object[types.length];
@@ -59,8 +68,12 @@ public class ObjectGenerator extends BaseGenerator {
 
     protected <T> boolean processCustom(Map<String, Function> methodNameFunctions, Method method, T t) throws InvocationTargetException, IllegalAccessException {
         if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
-            Object[] params = (Object[]) methodNameFunctions.get(method.getName()).apply(t);
-            method.invoke(t, params);
+            Object params = methodNameFunctions.get(method.getName()).apply(t);
+            if (isBaseType(params)) {
+                method.invoke(t, params);
+            } else {
+                method.invoke(t, generate(params.getClass()));
+            }
             return true;
         }
         else {

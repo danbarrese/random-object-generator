@@ -4,6 +4,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 public class ObjectGeneratorTest {
 
@@ -12,6 +15,7 @@ public class ObjectGeneratorTest {
         private String name;
         private String height;
         private Integer count;
+        private Double length;
         private Date date;
         private MySubObject sub;
 
@@ -26,6 +30,9 @@ public class ObjectGeneratorTest {
 
         public Integer getCount() { return count; }
         public void setCount(Integer count) { this.count = count; }
+
+        public Double getLength() { return length; }
+        public void setLength(Double length) { this.length = length; }
 
         public Date getDate() { return date; }
         public void setDate(Date date) { this.date = date; }
@@ -74,6 +81,7 @@ public class ObjectGeneratorTest {
         Assert.assertNotNull(a.getId());
         Assert.assertNotNull(a.getName());
         Assert.assertNotNull(a.getCount());
+        Assert.assertNotNull(a.getLength());
         Assert.assertNotNull(a.getColor());
         Assert.assertNotNull(a.getDate());
         Assert.assertNotNull(a.getSub());
@@ -81,6 +89,14 @@ public class ObjectGeneratorTest {
         Assert.assertNotNull(a.getSub().getSubSub());
         Assert.assertNotNull(a.getSub().getSubSub().getDexterity());
         Assert.assertNull(a.getHeight());
+    }
+
+    @Test
+    public void testCustomFunction() throws Exception {
+        Map<String, Function> fns = new HashMap<>();
+        fns.put("setName", klass -> "blahhh");
+        MyObject2 a = objectGenerator.generate(MyObject2.class, fns);
+        Assert.assertEquals("blahhh", a.getName());
     }
 
 }

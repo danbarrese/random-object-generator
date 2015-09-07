@@ -5,8 +5,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.util.Date;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -27,36 +26,37 @@ public class BaseGenerator {
     public <T> T random(Class<T> type) {
         if (type.equals(String.class)) {
             return (T) randomString();
-        }
-        else if (type.equals(Integer.class)) {
+        } else if (type.equals(Integer.class)) {
             return (T) randomInt();
-        }
-        else if (type.equals(Long.class)) {
+        } else if (type.equals(Long.class)) {
             return (T) randomLong();
-        }
-        else if (type.equals(Date.class)) {
+        } else if (type.equals(Double.class)) {
+            return (T) randomDouble();
+        } else if (type.equals(Date.class)) {
             return (T) randomDate();
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("Don't know how to generate a random " + type.getName());
         }
     }
+
     public <T> boolean isBaseType(Class<T> type) {
         if (type.equals(String.class)) {
             return true;
-        }
-        else if (type.equals(Integer.class)) {
+        } else if (type.equals(Integer.class)) {
             return true;
-        }
-        else if (type.equals(Long.class)) {
+        } else if (type.equals(Long.class)) {
             return true;
-        }
-        else if (type.equals(Date.class)) {
+        } else if (type.equals(Double.class)) {
             return true;
-        }
-        else {
+        } else if (type.equals(Date.class)) {
+            return true;
+        } else {
             return false;
         }
+    }
+
+    public <T> boolean isBaseType(Object o) {
+        return o instanceof String || o instanceof Integer || o instanceof Long || o instanceof Double || o instanceof Date;
     }
 
     public String randomString() {
@@ -106,6 +106,14 @@ public class BaseGenerator {
         return nextLong(l) + lowerBound;
     }
 
+    public Double randomDouble() {
+        return randomDouble(0.0, 1000000.0);
+    }
+
+    public Double randomDouble(double lowerBound, double upperBound) {
+        return lowerBound + (upperBound - lowerBound) * random.nextDouble();
+    }
+
     public Long nextId() {
         return id.getAndIncrement();
     }
@@ -129,6 +137,32 @@ public class BaseGenerator {
         return randomDate(epoch.toString(dateTimeFormatter), now.toString(dateTimeFormatter));
     }
 
+    public <T> T choose(T[] elements) {
+        if (elements == null || elements.length == 0) {
+            return null;
+        }
+        return elements[randomInt(0, elements.length - 1)];
+    }
+
+    public <T> T choose(List<T> elements) {
+        if (elements == null || elements.isEmpty()) {
+            return null;
+        }
+        return elements.get(randomInt(0, elements.size() - 1));
+    }
+
+    public <T> T choose(Set<T> elements) {
+        if (elements == null || elements.isEmpty()) {
+            return null;
+        }
+        int idx = randomInt(0, elements.size() - 1);
+        Iterator<T> iter = elements.iterator();
+        for (int i = 0; i < idx - 1; i++) {
+            iter.next();
+        }
+        return iter.next();
+    }
+
     // private methods
     // ------------------------------------
 
@@ -138,7 +172,7 @@ public class BaseGenerator {
         do {
             bits = (random.nextLong() << 1) >>> 1;
             val = bits % n;
-        } while (bits-val+(n-1) < 0L);
+        } while (bits - val + (n - 1) < 0L);
         return val;
     }
 

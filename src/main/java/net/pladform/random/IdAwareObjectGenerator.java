@@ -14,7 +14,7 @@ public class IdAwareObjectGenerator extends ObjectGenerator {
         super();
     }
 
-    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws InvocationTargetException, IllegalAccessException {
         boolean done = processCustom(methodNameFunctions, method, t);
         if (!done && (method.getName().endsWith("Id")) || method.getName().endsWith("ID")) {
             if (method.getParameterTypes().length == 1 && method.getParameterTypes()[0].equals(Long.class)) {

@@ -51,10 +51,9 @@ public class BaseGeneratorTest {
         verifyRandomIntsInRange(-10, Integer.MAX_VALUE);
         verifyRandomIntsInRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-        for (int i = 0; i < 1000; i++) {
-            System.out.println(baseGenerator.randomInt(Integer.MIN_VALUE, Integer.MAX_VALUE));
-
-        }
+//        for (int i = 0; i < 100; i++) {
+//            System.out.println(baseGenerator.randomInt(Integer.MIN_VALUE, Integer.MAX_VALUE));
+//        }
     }
 
     @Test
