@@ -2,9 +2,7 @@ package net.pladform.random;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 /**

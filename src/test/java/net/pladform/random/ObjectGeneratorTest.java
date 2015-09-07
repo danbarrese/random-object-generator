@@ -6,7 +6,6 @@ import org.junit.Test;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 public class ObjectGeneratorTest {
