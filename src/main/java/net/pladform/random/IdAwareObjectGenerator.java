@@ -2,7 +2,7 @@ package net.pladform.random;
 
 import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 /**
  * Generates objects using reflection.
@@ -13,7 +13,7 @@ public class IdAwareObjectGenerator extends ObjectGenerator {
         super();
     }
 
-    protected <T> void processMethod(Method method, Map<String, Callable> methodNameFunctions, T t) throws Exception {
+    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws Exception {
         boolean done = processCustom(methodNameFunctions, method, t);
         if (!done && (method.getName().endsWith("Id")) || method.getName().endsWith("ID")) {
             if (method.getParameterTypes().length == 1 && method.getParameterTypes()[0].equals(Long.class)) {

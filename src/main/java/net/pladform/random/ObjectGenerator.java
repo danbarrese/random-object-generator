@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 /**
  * Generates objects using reflection.
@@ -29,7 +30,7 @@ public class ObjectGenerator extends BaseGenerator {
         }
     }
 
-    public <T> T generate(Class<T> klass, Map<String, Callable> methodNameFunctions, Class<T>... constructorTypes) {
+    public <T> T generate(Class<T> klass, Map<String, Function> methodNameFunctions, Class<T>... constructorTypes) {
         try {
             T t = klass.getConstructor(constructorTypes).newInstance();
             Method[] methods = klass.getMethods();
@@ -44,7 +45,7 @@ public class ObjectGenerator extends BaseGenerator {
         }
     }
 
-    protected <T> void processMethod(Method method, Map<String, Callable> methodNameFunctions, T t) throws Exception {
+    protected <T> void processMethod(Method method, Map<String, Function> methodNameFunctions, T t) throws Exception {
         boolean done = processCustom(methodNameFunctions, method, t);
         if (!done) {
             processNormal(method, t);
@@ -70,9 +71,9 @@ public class ObjectGenerator extends BaseGenerator {
         }
     }
 
-    protected <T> boolean processCustom(Map<String, Callable> methodNameFunctions, Method method, T t) throws Exception {
+    protected <T> boolean processCustom(Map<String, Function> methodNameFunctions, Method method, T t) throws Exception {
         if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
-            Object params = methodNameFunctions.get(method.getName()).call();
+            Object params = methodNameFunctions.get(method.getName()).apply(t);
             if (isBaseType(params)) {
                 method.invoke(t, params);
             } else {
