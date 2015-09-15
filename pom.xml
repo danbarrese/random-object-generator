@@ -6,6 +6,7 @@
 
     <groupId>net.pladform</groupId>
     <artifactId>random-object-generator</artifactId>
+    <packaging>jar</packaging>
     <version>0.1-SNAPSHOT</version>
 
     <properties>
