@@ -7,7 +7,7 @@
     <groupId>net.pladform</groupId>
     <artifactId>random-object-generator</artifactId>
     <packaging>jar</packaging>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
