@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * @author Dan Barrese
+ */
 public class ObjectGeneratorTest {
 
     public static class MyObject {
@@ -22,55 +25,116 @@ public class ObjectGeneratorTest {
         public MyObject() {
         }
 
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
+        public Long getId() {
+            return id;
+        }
 
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
+        public void setId(Long id) {
+            this.id = id;
+        }
 
-        public Integer getCount() { return count; }
-        public void setCount(Integer count) { this.count = count; }
+        public String getName() {
+            return name;
+        }
 
-        public Double getLength() { return length; }
-        public void setLength(Double length) { this.length = length; }
+        public void setName(String name) {
+            this.name = name;
+        }
 
-        public Date getDate() { return date; }
-        public void setDate(Date date) { this.date = date; }
+        public Integer getCount() {
+            return count;
+        }
 
-        protected String getHeight() { return height; }
-        protected void setHeight(String height) { this.height = height; }
+        public void setCount(Integer count) {
+            this.count = count;
+        }
 
-        public MySubObject getSub() { return sub; }
-        public void setSub(MySubObject sub) { this.sub = sub; }
+        public Double getLength() {
+            return length;
+        }
+
+        public void setLength(Double length) {
+            this.length = length;
+        }
+
+        public Date getDate() {
+            return date;
+        }
+
+        public void setDate(Date date) {
+            this.date = date;
+        }
+
+        protected String getHeight() {
+            return height;
+        }
+
+        protected void setHeight(String height) {
+            this.height = height;
+        }
+
+        public MySubObject getSub() {
+            return sub;
+        }
+
+        public void setSub(MySubObject sub) {
+            this.sub = sub;
+        }
     }
 
     public static class MyObject2 extends MyObject {
         private String color;
+
         public MyObject2() {
             super();
         }
-        public String getColor() { return color; }
-        public void setColor(String color) { this.color = color; }
+
+        public String getColor() {
+            return color;
+        }
+
+        public void setColor(String color) {
+            this.color = color;
+        }
     }
 
     public static class MySubObject {
         private String strength;
         private MySubSubObject subSub;
+
         public MySubObject() {
         }
-        public String getStrength() { return strength; }
-        public void setStrength(String strength) { this.strength = strength; }
 
-        public MySubSubObject getSubSub() { return subSub; }
-        public void setSubSub(MySubSubObject subSub) { this.subSub = subSub; }
+        public String getStrength() {
+            return strength;
+        }
+
+        public void setStrength(String strength) {
+            this.strength = strength;
+        }
+
+        public MySubSubObject getSubSub() {
+            return subSub;
+        }
+
+        public void setSubSub(MySubSubObject subSub) {
+            this.subSub = subSub;
+        }
     }
 
     public static class MySubSubObject {
         private String dexterity;
+
         public MySubSubObject() {
         }
-        public String getDexterity() { return dexterity; }
-        public void setDexterity(String dexterity) { this.dexterity = dexterity; }
+
+        public String getDexterity() {
+            return dexterity;
+        }
+
+        public void setDexterity(String dexterity) {
+            this.dexterity = dexterity;
+        }
     }
 
     ObjectGenerator objectGenerator = new IdAwareObjectGenerator();
