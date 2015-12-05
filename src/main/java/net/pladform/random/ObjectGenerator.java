@@ -7,6 +7,8 @@ import java.util.concurrent.Callable;
 
 /**
  * Generates objects using reflection.
+ *
+ * @author Dan Barrese
  */
 public class ObjectGenerator extends BaseGenerator {
 
@@ -63,8 +65,7 @@ public class ObjectGenerator extends BaseGenerator {
             }
             method.invoke(t, params);
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -78,8 +79,7 @@ public class ObjectGenerator extends BaseGenerator {
                 method.invoke(t, generate(params.getClass()));
             }
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }

@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Responsible for generation of random Strings, Longs, ints, etc.
+ *
+ * @author Dan Barrese
  */
 public class BaseGenerator {
 

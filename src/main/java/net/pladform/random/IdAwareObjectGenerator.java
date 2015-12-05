@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 
 /**
  * Generates objects using reflection.
+ *
+ * @author Dan Barrese
  */
 public class IdAwareObjectGenerator extends ObjectGenerator {
 

@@ -1,5 +1,8 @@
 package net.pladform.random;
 
+/**
+ * @author Dan Barrese
+ */
 public class FailedRandomObjectGenerationException extends RuntimeException {
 
     public FailedRandomObjectGenerationException(Exception cause) {

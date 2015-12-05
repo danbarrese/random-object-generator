@@ -5,6 +5,9 @@ import org.junit.Test;
 
 import java.util.Random;
 
+/**
+ * @author Dan Barrese
+ */
 public class BaseGeneratorTest {
 
     Random r = new Random();
