@@ -3,17 +3,17 @@ package net.pladform.random;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Random;
+import java.util.HashSet;
+import java.util.Set;
 
 public class BaseGeneratorTest {
 
-    Random r = new Random();
-    BaseGenerator baseGenerator = new BaseGenerator();
+    BaseGenerator g = new BaseGenerator();
 
     private void verifyRandomIntsInRange(int min, int max) {
         int r;
         for (int i = 0; i < 100000; i++) {
-            r = baseGenerator.randomInt(min, max);
+            r = g.randomInt(min, max);
             Assert.assertTrue(String.format("%d is not in range[%d, %d]", r, min, max), r >= min && r <= max);
         }
     }
@@ -50,20 +50,36 @@ public class BaseGeneratorTest {
         verifyRandomIntsInRange(-1, Integer.MAX_VALUE);
         verifyRandomIntsInRange(-10, Integer.MAX_VALUE);
         verifyRandomIntsInRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-//        for (int i = 0; i < 100; i++) {
-//            System.out.println(baseGenerator.randomInt(Integer.MIN_VALUE, Integer.MAX_VALUE));
-//        }
     }
 
     @Test
     public void randomString() throws Exception {
-        System.out.println(baseGenerator.randomString());
+        System.out.println(g.randomString());
     }
 
     @Test
     public void words() throws Exception {
-        System.out.println(baseGenerator.words(5));
+        System.out.println(g.words(5));
+    }
+
+    @Test
+    public void testNextId() throws Exception {
+        Long l1 = g.nextId();
+        Long l2 = g.nextId();
+        Long l3 = g.nextId();
+        Assert.assertEquals((Long) 1L, l1);
+        Assert.assertEquals((Long) 2L, l2);
+        Assert.assertEquals((Long) 3L, l3);
+    }
+
+    @Test
+    public void testChooseOrCreateNew() throws Exception {
+        Set<Long> ids  = new HashSet<>();
+        ids.add(0L);
+        for (int i = 0; i < 100; i++) {
+            Long l = g.chooseOrCreateNew(ids, 0.2, () -> g.nextId());
+            System.out.println(l);
+        }
     }
 
 }

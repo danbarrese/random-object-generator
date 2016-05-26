@@ -1,15 +1,18 @@
 package net.pladform.random;
 
+import org.apache.commons.lang3.Validate;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Responsible for generation of random Strings, Longs, ints, etc.
+ *
  * @author Dan Barrese
  */
 @SuppressWarnings({"unchecked", "unused", "FieldCanBeLocal"})
@@ -25,6 +28,13 @@ public class BaseGenerator {
     public double DEFAULT_DOUBLE_MIN = 0.0;
     public double DEFAULT_DOUBLE_MAX = 1000000.0;
     public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    public double DEFAULT_CHANCE_OF_NULL_STRING = 0.0;
+    public double DEFAULT_CHANCE_OF_NULL_INT = 0.0;
+    public double DEFAULT_CHANCE_OF_NULL_LONG = 0.0;
+    public double DEFAULT_CHANCE_OF_NULL_DOUBLE = 0.0;
+    public double DEFAULT_CHANCE_OF_NULL_BOOLEAN = 0.0;
+    public double DEFAULT_CHANCE_OF_NULL_CHAR = 0.0;
+    public double DEFAULT_CHANCE_OF_NULL_DATE = 0.0;
 
     private Random random;
     private Map<String, AtomicLong> idGenerator;
@@ -45,6 +55,7 @@ public class BaseGenerator {
     // ------------------------
 
     public <T> T random(Class<T> type) {
+        Validate.notNull(type);
         if (type.equals(String.class)) {
             return (T) randomString();
         } else if (type.equals(Integer.class) || type.equals(int.class)) {
@@ -64,7 +75,9 @@ public class BaseGenerator {
         }
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     public <T> boolean isBaseType(Class<T> type) {
+        Validate.notNull(type);
         if (type.equals(String.class)) {
             return true;
         } else if (type.equals(Integer.class) || type.equals(int.class)) {
@@ -85,10 +98,23 @@ public class BaseGenerator {
     }
 
     public boolean isBaseType(Object o) {
-        return o instanceof String || o instanceof Integer || o instanceof Long || o instanceof Double || o instanceof Date;
+        Validate.notNull(o);
+        return isBaseType(o.getClass());
+    }
+
+    @SuppressWarnings("SimplifiableIfStatement")
+    public boolean tryOdds(double odds) {
+        Validate.isTrue(odds >= 0.0 && odds <= 1.0);
+        if (odds == 0.0) {
+            return false;
+        }
+        return randomDouble(0.0, 1.0) <= odds;
     }
 
     public String randomString() {
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_STRING)) {
+            return null;
+        }
         int len = randomInt(DEFAULT_STRING_LENGTH_MIN, DEFAULT_STRING_LENGTH_MAX);
         if (len == 0) {
             return "";
@@ -101,6 +127,9 @@ public class BaseGenerator {
     }
 
     public Character randomChar() {
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_CHAR)) {
+            return null;
+        }
         return CHARACTER_SET.charAt(randomInt(0, CHARACTER_SET.length() - 1));
     }
 
@@ -109,9 +138,10 @@ public class BaseGenerator {
     }
 
     public Integer randomInt(int lowerBound, int upperBound) {
-        if (upperBound < lowerBound) {
-            throw new IllegalArgumentException("upperBound cannot be less than lowerBound.");
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_INT)) {
+            return null;
         }
+        Validate.isTrue(upperBound >= lowerBound);
         int i = upperBound - lowerBound + 1;
         if (upperBound >= 0 && i <= 0) {
             long l = randomLong(lowerBound, upperBound);
@@ -120,14 +150,24 @@ public class BaseGenerator {
         return random.nextInt(i) + lowerBound;
     }
 
+    public Set<Integer> randomIntsDistinct(int lowerBound, int upperBound, int count) {
+        Validate.isTrue(count > 0);
+        Set<Integer> ints = new HashSet<>();
+        while (ints.size() != count) {
+            ints.add(randomInt(lowerBound, upperBound));
+        }
+        return ints;
+    }
+
     public Long randomLong() {
         return randomLong(DEFAULT_LONG_MIN, DEFAULT_LONG_MAX);
     }
 
     public Long randomLong(long lowerBound, long upperBound) {
-        if (upperBound < lowerBound) {
-            throw new IllegalArgumentException("upperBound cannot be less than lowerBound.");
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_LONG)) {
+            return null;
         }
+        Validate.isTrue(upperBound >= lowerBound);
         long l = upperBound - lowerBound + 1;
         if (upperBound >= 0 && l < 0) {
             throw new IllegalStateException("numeric overflow");
@@ -140,6 +180,10 @@ public class BaseGenerator {
     }
 
     public Double randomDouble(double lowerBound, double upperBound) {
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_DOUBLE)) {
+            return null;
+        }
+        Validate.isTrue(upperBound >= lowerBound);
         return lowerBound + (upperBound - lowerBound) * random.nextDouble();
     }
 
@@ -148,10 +192,16 @@ public class BaseGenerator {
     }
 
     public Long nextId(String arbitraryGeneratorName) {
-        return idGenerator.getOrDefault(arbitraryGeneratorName, new AtomicLong(1)).getAndIncrement();
+        Validate.notNull(arbitraryGeneratorName);
+        return idGenerator.computeIfAbsent(arbitraryGeneratorName, s -> new AtomicLong(1)).getAndIncrement();
     }
 
     public Date randomDate(String fromDate, String toDate) {
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_DATE)) {
+            return null;
+        }
+        Validate.notNull(fromDate);
+        Validate.notNull(toDate);
         long lowerBound = dateTimeFormatter.parseDateTime(fromDate).getMillis();
         DateTime upperBoundDateTime = dateTimeFormatter.parseDateTime(toDate);
         long upperBound = upperBoundDateTime.getMillis();
@@ -160,6 +210,7 @@ public class BaseGenerator {
     }
 
     public Date randomDate(String fromDate) {
+        Validate.notNull(fromDate);
         DateTime now = new DateTime(new Date());
         return randomDate(fromDate, now.toString(dateTimeFormatter));
     }
@@ -171,27 +222,39 @@ public class BaseGenerator {
     }
 
     public Boolean randomBoolean() {
+        if (tryOdds(DEFAULT_CHANCE_OF_NULL_BOOLEAN)) {
+            return null;
+        }
         return randomInt(0, 1) == 1;
     }
 
     public <T> T choose(T... elements) {
-        if (elements == null || elements.length == 0) {
-            return null;
-        }
+        Validate.notNull(elements);
+        Validate.isTrue(elements.length > 0);
         return elements[randomInt(0, elements.length - 1)];
     }
 
-    public <T> T choose(List<T> elements) {
-        if (elements == null || elements.isEmpty()) {
-            return null;
+    public <T> T choose(Collection<T> elements) {
+        Validate.notNull(elements);
+        Validate.isTrue(elements.size() > 0);
+        if (elements instanceof List) {
+            return choose((List<T>) elements);
+        } else if (elements instanceof Set) {
+            return choose((Set<T>) elements);
+        } else {
+            throw new IllegalArgumentException("Don't know how to choose from collection of type: " + elements.getClass());
         }
+    }
+
+    public <T> T choose(List<T> elements) {
+        Validate.notNull(elements);
+        Validate.isTrue(elements.size() > 0);
         return elements.get(randomInt(0, elements.size() - 1));
     }
 
     public <T> T choose(Set<T> elements) {
-        if (elements == null || elements.isEmpty()) {
-            return null;
-        }
+        Validate.notNull(elements);
+        Validate.isTrue(elements.size() > 0);
         int idx = randomInt(0, elements.size() - 1);
         Iterator<T> iter = elements.iterator();
         for (int i = 0; i < idx - 1; i++) {
@@ -200,17 +263,13 @@ public class BaseGenerator {
         return iter.next();
     }
 
-    public <T> Set<T> choose(Set<T> elements, int count) {
-        if (elements == null || elements.isEmpty()) {
-            return null;
-        }
+    public <T> Collection<T> choose(Collection<T> elements, int count) {
+        Validate.notNull(elements);
+        Validate.isTrue(elements.size() > 0);
         if (count > elements.size()) {
             count = elements.size();
         }
-        Set<Integer> chosenIndexes = new HashSet<>();
-        while (chosenIndexes.size() != count) {
-            chosenIndexes.add(randomInt(0, elements.size() - 1));
-        }
+        Set<Integer> chosenIndexes = randomIntsDistinct(0, elements.size() - 1, count);
         Iterator<T> iter = elements.iterator();
         Set<T> chosenElements = new HashSet<>();
         for (int i = 0; i < elements.size(); i++) {
@@ -225,10 +284,20 @@ public class BaseGenerator {
         return chosenElements;
     }
 
-    public String words(int count) {
-        if (count <= 0) {
-            throw new IllegalArgumentException("word count must be > 0.");
+    public <T> T chooseOrCreateNew(Collection<T> elements,
+                                   double oddsToCreateNew,
+                                   Callable<T> createNewFunction) throws Exception {
+        if (tryOdds(oddsToCreateNew)) {
+            T t = createNewFunction.call();
+            elements.add(t);
+            return t;
+        } else {
+            return choose(elements);
         }
+    }
+
+    public String words(int count) {
+        Validate.isTrue(count > 0);
         if (dictionary == null) {
             loadDictionary();
         }

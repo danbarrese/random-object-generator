@@ -22,10 +22,10 @@ public class HouseObjectGeneratorTest {
     }
 
     @Test
-    public void generate() throws Exception {
-        Map<String, Callable> setters = new HashMap<>();
-        setters.put("setName", () -> "blahhh");
-        House o = g.generate(House.class, setters);
+    public void testGenerateHouse() throws Exception {
+        Map<String, Callable> setterOverrides = new HashMap<>();
+        setterOverrides.put("setName", () -> "blahhh");
+        House o = g.generate(House.class, setterOverrides);
         System.out.println(o);
     }
 

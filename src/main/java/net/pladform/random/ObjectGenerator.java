@@ -1,5 +1,6 @@
 package net.pladform.random;
 
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.reflect.TypeUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -14,6 +15,7 @@ import java.util.stream.Stream;
 /**
  * Generates objects using reflection.
  */
+@SuppressWarnings({"unchecked"})
 public class ObjectGenerator extends BaseGenerator {
 
     public int DEFAULT_SET_SIZE_MIN = 0;
@@ -23,6 +25,7 @@ public class ObjectGenerator extends BaseGenerator {
     }
 
     public <T> T generate(Class<T> klass) {
+        Validate.notNull(klass);
         try {
             T t = klass.getConstructor().newInstance();
             Method[] methods = klass.getMethods();
@@ -30,14 +33,15 @@ public class ObjectGenerator extends BaseGenerator {
                 processMethod(method, null, t);
             }
             return t;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new FailedRandomObjectGenerationException(e);
         } catch (Exception e) {
             throw new FailedRandomObjectGenerationException(e);
         }
     }
-    
+
+    @SuppressWarnings("unused")
     public <T> T generate(Class<T> klass, Object... constructorArgs) {
+        Validate.notNull(klass);
+        Validate.notNull(constructorArgs);
         try {
             Class[] constructorTypes = toClasses(constructorArgs);
             T t = klass.getConstructor(constructorTypes).newInstance(constructorArgs);
@@ -46,30 +50,33 @@ public class ObjectGenerator extends BaseGenerator {
                 processMethod(method, null, t);
             }
             return t;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new FailedRandomObjectGenerationException(e);
         } catch (Exception e) {
             throw new FailedRandomObjectGenerationException(e);
         }
     }
 
-    public <T> T generate(Class<T> klass, Map<String, Callable> methodNameFunctions, Object... constructorArgs) {
+    public <T> T generate(Class<T> klass, Map<String, Callable> setterOverrides, Object... constructorArgs) {
+        Validate.notNull(klass);
+        Validate.notNull(constructorArgs);
         try {
             Class[] constructorTypes = toClasses(constructorArgs);
             T t = klass.getConstructor(constructorTypes).newInstance(constructorArgs);
             Method[] methods = klass.getMethods();
             for (Method method : methods) {
-                processMethod(method, methodNameFunctions, t);
+                processMethod(method, setterOverrides, t);
             }
             return t;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new FailedRandomObjectGenerationException(e);
         } catch (Exception e) {
             throw new FailedRandomObjectGenerationException(e);
         }
     }
 
-    public <T, E> Collection<T> randomCollection(Type elementType, Class<E> collectionType, int count) {
+    public <T, E> Collection<T> randomCollection(Type elementType,
+                                                 Class<E> collectionType,
+                                                 Map<String, Callable> setterOverrides,
+                                                 int count) {
+        Validate.notNull(elementType);
+        Validate.notNull(collectionType);
         Collection<T> collection;
         if (collectionType.equals(List.class)) {
             collection = new ArrayList<>();
@@ -81,7 +88,7 @@ public class ObjectGenerator extends BaseGenerator {
             throw new IllegalArgumentException("Don't know how to generate a random collection of type: " + collectionType.getName());
         }
         for (int i = 0; i < count; i++) {
-            collection.add((T) process(elementType));
+            collection.add((T) process(elementType, setterOverrides));
         }
         return collection;
     }
@@ -90,55 +97,63 @@ public class ObjectGenerator extends BaseGenerator {
     // protected methods
     // -----------------------
 
-    protected <T> void processMethod(Method method, Map<String, Callable> methodNameFunctions, T t) throws Exception {
-        boolean done = processCustom(methodNameFunctions, method, t);
+    protected <T> void processMethod(Method method, Map<String, Callable> setterOverrides, T t) throws Exception {
+        boolean done = processCustom(setterOverrides, method, t);
         if (!done) {
-            processNormal(method, t);
+            processNormal(method, setterOverrides, t);
         }
     }
 
-    protected Object process(Type type) {
-        Class<?> clazz = toClass(type);
+    protected Object process(Type type, Map<String, Callable> setterOverrides) {
+        Class<?> klass = toClass(type);
         if (type instanceof ParameterizedType) {
             Type parameterType = getParameterType((ParameterizedType) type);
-            return randomCollection(parameterType, clazz, randomInt(DEFAULT_SET_SIZE_MIN, DEFAULT_SET_SIZE_MAX));
+            return randomCollection(parameterType,
+                    klass,
+                    setterOverrides,
+                    randomInt(DEFAULT_SET_SIZE_MIN, DEFAULT_SET_SIZE_MAX));
         }
-        if (isBaseType(clazz)) {
-            return random(clazz);
+        if (isBaseType(klass)) {
+            return random(klass);
         } else {
-            return generate(clazz);
+            return generate(klass, setterOverrides);
         }
     }
 
-    protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException {
+    protected <T> boolean processNormal(Method method, Map<String, Callable> setterOverrides, T t) throws InvocationTargetException, IllegalAccessException {
         if (method.getName().startsWith("set") && method.getName().length() > 3) {
             Type[] types = method.getGenericParameterTypes();
 
             Object[] params = new Object[types.length];
             for (int i = 0; i < types.length; i++) {
-                params[i] = process(types[i]);
+                params[i] = process(types[i], setterOverrides);
             }
             method.invoke(t, params);
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
-    protected <T> boolean processCustom(Map<String, Callable> methodNameFunctions, Method method, T t) throws Exception {
-        if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
-            Object params = methodNameFunctions.get(method.getName()).call();
-            if (params == null) {
-                method.invoke(t, (Object) null);
-            } else {
-                method.invoke(t, params);
+    @SuppressWarnings("RedundantCast")
+    protected <T> boolean processCustom(Map<String, Callable> setterOverrides,
+                                        Method method,
+                                        T t) throws Exception {
+        if (setterOverrides != null) {
+            String classAndMethod = String.format("%s.%s",
+                    method.getDeclaringClass().getSimpleName(),
+                    method.getName());
+            if (setterOverrides.containsKey(classAndMethod)) {
+                Object params = setterOverrides.get(classAndMethod).call();
+                method.invoke(t, params == null ? (Object) null : params);
+                return true;
+            } else if (setterOverrides.containsKey(method.getName())) {
+                Object params = setterOverrides.get(method.getName()).call();
+                method.invoke(t, params == null ? (Object) null : params);
+                return true;
             }
-            return true;
         }
-        else {
-            return false;
-        }
+        return false;
     }
 
     protected Class[] toClasses(Object[] objects) {
@@ -161,3 +176,4 @@ public class ObjectGenerator extends BaseGenerator {
     }
 
 }
+
