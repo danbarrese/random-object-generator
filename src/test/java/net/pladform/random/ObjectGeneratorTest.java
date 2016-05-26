@@ -158,14 +158,13 @@ public class ObjectGeneratorTest {
     @Test
     public void testCustomFunction() throws Exception {
         Map<String, Callable> fns = new HashMap<>();
-        fns.put("setName", new Callable() {
-            @Override
-            public Object call() throws Exception {
-                return "blahhh";
-            }
-        });
+        fns.put("setName", () -> "blahhh");
+        fns.put("MySubSubObject.setDexterity", () -> "hahaha");
+
         MyObject2 a = objectGenerator.generate(MyObject2.class, fns);
+        System.out.println(a.getColor());
         Assert.assertEquals("blahhh", a.getName());
+        Assert.assertEquals("hahaha", a.getSub().getSubSub().getDexterity());
     }
 
 }

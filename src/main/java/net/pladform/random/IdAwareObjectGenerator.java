@@ -15,8 +15,8 @@ public class IdAwareObjectGenerator extends ObjectGenerator {
         super();
     }
 
-    protected <T> void processMethod(Method method, Map<String, Callable> methodNameFunctions, T t) throws Exception {
-        boolean done = processCustom(methodNameFunctions, method, t);
+    protected <T> void processMethod(Method method, Map<String, Callable> setterOverrides, T t) throws Exception {
+        boolean done = processCustom(setterOverrides, method, t);
         if (!done && (method.getName().endsWith("Id")) || method.getName().endsWith("ID")) {
             if (method.getParameterTypes().length == 1 && method.getParameterTypes()[0].equals(Long.class)) {
                 method.invoke(t, nextId());
@@ -24,7 +24,7 @@ public class IdAwareObjectGenerator extends ObjectGenerator {
             }
         }
         if (!done) {
-            processNormal(method, t);
+            processNormal(method, setterOverrides, t);
         }
     }
 
