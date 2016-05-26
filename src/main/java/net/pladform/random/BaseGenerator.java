@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Responsible for generation of random Strings, Longs, ints, etc.
  */
+@SuppressWarnings({ "unchecked", "unused", "FieldCanBeLocal" })
 public class BaseGenerator {
 
     private Random random;
@@ -36,9 +37,28 @@ public class BaseGenerator {
             return (T) randomDouble();
         } else if (type.equals(Date.class)) {
             return (T) randomDate();
+        } else if (type.equals(Boolean.class)) {
+            return (T) randomBoolean();
         } else {
             throw new IllegalArgumentException("Don't know how to generate a random " + type.getName());
         }
+    }
+
+    public <T, E> Collection<T> randomCollection(Class<T> objectType, Class<E> collectionType, int count) {
+        Collection<T> collection;
+        if (collectionType.equals(List.class)) {
+            collection = new ArrayList<>();
+        } else if (collectionType.equals(Set.class)) {
+            collection = new HashSet<>();
+        } else if (collectionType.equals(Deque.class)) {
+            collection = new ArrayDeque<>();
+        } else {
+            throw new IllegalArgumentException("Don't know how to generate a random collection of type: " + collectionType.getName());
+        }
+        for (int i = 0; i < count; i++) {
+            collection.add(random(objectType));
+        }
+        return collection;
     }
 
     public <T> boolean isBaseType(Class<T> type) {
@@ -52,12 +72,14 @@ public class BaseGenerator {
             return true;
         } else if (type.equals(Date.class)) {
             return true;
+        } else if (type.equals(Boolean.class)) {
+            return true;
         } else {
             return false;
         }
     }
 
-    public <T> boolean isBaseType(Object o) {
+    public boolean isBaseType(Object o) {
         return o instanceof String || o instanceof Integer || o instanceof Long || o instanceof Double || o instanceof Date;
     }
 
@@ -139,7 +161,11 @@ public class BaseGenerator {
         return randomDate(epoch.toString(dateTimeFormatter), now.toString(dateTimeFormatter));
     }
 
-    public <T> T choose(T[] elements) {
+    public Boolean randomBoolean() {
+        return randomInt(0, 1) == 1;
+    }
+
+    public <T> T choose(T... elements) {
         if (elements == null || elements.length == 0) {
             return null;
         }
@@ -163,6 +189,31 @@ public class BaseGenerator {
             iter.next();
         }
         return iter.next();
+    }
+
+    public <T> Set<T> choose(Set<T> elements, int count) {
+        if (elements == null || elements.isEmpty()) {
+            return null;
+        }
+        if (count > elements.size()) {
+            count = elements.size();
+        }
+        Set<Integer> chosenIndexes = new HashSet<>();
+        while (chosenIndexes.size() != count) {
+            chosenIndexes.add(randomInt(0, elements.size() - 1));
+        }
+        Iterator<T> iter = elements.iterator();
+        Set<T> chosenElements = new HashSet<>();
+        for (int i = 0; i < elements.size(); i++) {
+            T t = iter.next();
+            if (chosenIndexes.contains(i)) {
+                chosenElements.add(t);
+                if (chosenElements.size() == count) {
+                    break;
+                }
+            }
+        }
+        return chosenElements;
     }
 
     public String words(int count) {
