@@ -1,6 +1,5 @@
 package net.pladform.random;
 
-
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -11,68 +10,74 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Responsible for generation of random Strings, Longs, ints, etc.
+ * @author Dan Barrese
  */
-@SuppressWarnings({ "unchecked", "unused", "FieldCanBeLocal" })
+@SuppressWarnings({"unchecked", "unused", "FieldCanBeLocal"})
 public class BaseGenerator {
 
+    public String CHARACTER_SET = " \tabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890`~!@#$%^&*()_+[]\\{}|;':\",.<>/?";
+    public int DEFAULT_STRING_LENGTH_MIN = 1;
+    public int DEFAULT_STRING_LENGTH_MAX = 25;
+    public int DEFAULT_INT_MIN = 0;
+    public int DEFAULT_INT_MAX = 1000;
+    public long DEFAULT_LONG_MIN = -1000000L;
+    public long DEFAULT_LONG_MAX = 1000000L;
+    public double DEFAULT_DOUBLE_MIN = 0.0;
+    public double DEFAULT_DOUBLE_MAX = 1000000.0;
+    public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
     private Random random;
-    private String characterSet = " \tabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890`~!@#$%^&*()_+[]\\{}|;':\",.<>/?";
-    private AtomicLong id;
-    private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private Map<String, AtomicLong> idGenerator;
+    private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern(DEFAULT_DATE_FORMAT);
     private List<String> dictionary;
+
+    // ------------------------
+    // constructors
+    // ------------------------
 
     public BaseGenerator() {
         random = new Random();
-        id = new AtomicLong(1);
+        idGenerator = new HashMap<>();
     }
+
+    // ------------------------
+    // public methods
+    // ------------------------
 
     public <T> T random(Class<T> type) {
         if (type.equals(String.class)) {
             return (T) randomString();
-        } else if (type.equals(Integer.class)) {
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
             return (T) randomInt();
-        } else if (type.equals(Long.class)) {
+        } else if (type.equals(Long.class) || type.equals(long.class)) {
             return (T) randomLong();
-        } else if (type.equals(Double.class)) {
+        } else if (type.equals(Double.class) || type.equals(double.class)) {
             return (T) randomDouble();
         } else if (type.equals(Date.class)) {
             return (T) randomDate();
-        } else if (type.equals(Boolean.class)) {
+        } else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
             return (T) randomBoolean();
+        } else if (type.equals(Character.class) || type.equals(char.class)) {
+            return (T) randomChar();
         } else {
             throw new IllegalArgumentException("Don't know how to generate a random " + type.getName());
         }
     }
 
-    public <T, E> Collection<T> randomCollection(Class<T> objectType, Class<E> collectionType, int count) {
-        Collection<T> collection;
-        if (collectionType.equals(List.class)) {
-            collection = new ArrayList<>();
-        } else if (collectionType.equals(Set.class)) {
-            collection = new HashSet<>();
-        } else if (collectionType.equals(Deque.class)) {
-            collection = new ArrayDeque<>();
-        } else {
-            throw new IllegalArgumentException("Don't know how to generate a random collection of type: " + collectionType.getName());
-        }
-        for (int i = 0; i < count; i++) {
-            collection.add(random(objectType));
-        }
-        return collection;
-    }
-
     public <T> boolean isBaseType(Class<T> type) {
         if (type.equals(String.class)) {
             return true;
-        } else if (type.equals(Integer.class)) {
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
             return true;
-        } else if (type.equals(Long.class)) {
+        } else if (type.equals(Long.class) || type.equals(long.class)) {
             return true;
-        } else if (type.equals(Double.class)) {
+        } else if (type.equals(Double.class) || type.equals(double.class)) {
             return true;
         } else if (type.equals(Date.class)) {
             return true;
-        } else if (type.equals(Boolean.class)) {
+        } else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+            return true;
+        } else if (type.equals(Character.class) || type.equals(char.class)) {
             return true;
         } else {
             return false;
@@ -84,7 +89,7 @@ public class BaseGenerator {
     }
 
     public String randomString() {
-        int len = randomInt(0, 100);
+        int len = randomInt(DEFAULT_STRING_LENGTH_MIN, DEFAULT_STRING_LENGTH_MAX);
         if (len == 0) {
             return "";
         }
@@ -96,11 +101,11 @@ public class BaseGenerator {
     }
 
     public Character randomChar() {
-        return characterSet.charAt(randomInt(0, characterSet.length() - 1));
+        return CHARACTER_SET.charAt(randomInt(0, CHARACTER_SET.length() - 1));
     }
 
     public Integer randomInt() {
-        return randomInt(0, 10000);
+        return randomInt(DEFAULT_INT_MIN, DEFAULT_INT_MAX);
     }
 
     public Integer randomInt(int lowerBound, int upperBound) {
@@ -116,7 +121,7 @@ public class BaseGenerator {
     }
 
     public Long randomLong() {
-        return randomLong(-1000000L, 1000000L);
+        return randomLong(DEFAULT_LONG_MIN, DEFAULT_LONG_MAX);
     }
 
     public Long randomLong(long lowerBound, long upperBound) {
@@ -131,7 +136,7 @@ public class BaseGenerator {
     }
 
     public Double randomDouble() {
-        return randomDouble(0.0, 1000000.0);
+        return randomDouble(DEFAULT_DOUBLE_MIN, DEFAULT_DOUBLE_MAX);
     }
 
     public Double randomDouble(double lowerBound, double upperBound) {
@@ -139,7 +144,11 @@ public class BaseGenerator {
     }
 
     public Long nextId() {
-        return id.getAndIncrement();
+        return nextId("default");
+    }
+
+    public Long nextId(String arbitraryGeneratorName) {
+        return idGenerator.getOrDefault(arbitraryGeneratorName, new AtomicLong(1)).getAndIncrement();
     }
 
     public Date randomDate(String fromDate, String toDate) {
@@ -232,8 +241,9 @@ public class BaseGenerator {
         return words.toString();
     }
 
+    // ------------------------
     // private methods
-    // ------------------------------------
+    // ------------------------
 
     private Long nextLong(long n) {
         // error checking and 2^x checking removed for simplicity.

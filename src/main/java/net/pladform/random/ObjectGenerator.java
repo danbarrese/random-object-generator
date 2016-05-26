@@ -6,9 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -18,11 +16,13 @@ import java.util.stream.Stream;
  */
 public class ObjectGenerator extends BaseGenerator {
 
+    public int DEFAULT_SET_SIZE_MIN = 0;
+    public int DEFAULT_SET_SIZE_MAX = 10;
+
     public ObjectGenerator() {
     }
 
     public <T> T generate(Class<T> klass) {
-        System.out.println(klass);
         try {
             T t = klass.getConstructor().newInstance();
             Method[] methods = klass.getMethods();
@@ -68,7 +68,24 @@ public class ObjectGenerator extends BaseGenerator {
             throw new FailedRandomObjectGenerationException(e);
         }
     }
-    
+
+    public <T, E> Collection<T> randomCollection(Type elementType, Class<E> collectionType, int count) {
+        Collection<T> collection;
+        if (collectionType.equals(List.class)) {
+            collection = new ArrayList<>();
+        } else if (collectionType.equals(Set.class)) {
+            collection = new HashSet<>();
+        } else if (collectionType.equals(Deque.class)) {
+            collection = new ArrayDeque<>();
+        } else {
+            throw new IllegalArgumentException("Don't know how to generate a random collection of type: " + collectionType.getName());
+        }
+        for (int i = 0; i < count; i++) {
+            collection.add((T) process(elementType));
+        }
+        return collection;
+    }
+
     // -----------------------
     // protected methods
     // -----------------------
@@ -80,16 +97,26 @@ public class ObjectGenerator extends BaseGenerator {
         }
     }
 
+    protected Object process(Type type) {
+        Class<?> clazz = toClass(type);
+        if (type instanceof ParameterizedType) {
+            Type parameterType = getParameterType((ParameterizedType) type);
+            return randomCollection(parameterType, clazz, randomInt(DEFAULT_SET_SIZE_MIN, DEFAULT_SET_SIZE_MAX));
+        }
+        if (isBaseType(clazz)) {
+            return random(clazz);
+        } else {
+            return generate(clazz);
+        }
+    }
+
     protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException {
         if (method.getName().startsWith("set") && method.getName().length() > 3) {
-            Class[] types = method.getParameterTypes();
+            Type[] types = method.getGenericParameterTypes();
+
             Object[] params = new Object[types.length];
             for (int i = 0; i < types.length; i++) {
-                if (isBaseType(types[i])) {
-                    params[i] = random(types[i]);
-                } else {
-                    params[i] = generate(types[i]);
-                }
+                params[i] = process(types[i]);
             }
             method.invoke(t, params);
             return true;
@@ -101,12 +128,9 @@ public class ObjectGenerator extends BaseGenerator {
 
     protected <T> boolean processCustom(Map<String, Callable> methodNameFunctions, Method method, T t) throws Exception {
         if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
-            System.out.println(String.format("custom: %s.%s", t.getClass().getSimpleName(), method.getName()));
             Object params = methodNameFunctions.get(method.getName()).call();
             if (params == null) {
                 method.invoke(t, (Object) null);
-            //            } else if (isBaseType(params)) {
-            //                method.invoke(t, params);
             } else {
                 method.invoke(t, params);
             }
@@ -128,69 +152,12 @@ public class ObjectGenerator extends BaseGenerator {
         return classesAr;
     }
 
-    //    protected <T> boolean processCustom(Map<String, Function> methodNameFunctions, Method method, T t) throws InvocationTargetException, IllegalAccessException {
-//        if (methodNameFunctions != null && methodNameFunctions.containsKey(method.getName())) {
-//            Object params = methodNameFunctions.get(method.getName()).apply(t);
-//            if (isBaseType(params)) {
-//                method.invoke(t, params);
-//            } else {
-//                method.invoke(t, generate(params.getClass()));
-//            }
-//            return true;
-//        }
-//        else {
-//            return false;
-//        }
-//    }
+    protected Class<?> toClass(Type type) {
+        return TypeUtils.getRawType(type, type);
+    }
 
-//    protected <T> boolean processNormal(Method method, T t) throws InvocationTargetException, IllegalAccessException {
-//        if (method.getName().startsWith("set") && method.getName().length() > 3) {
-//            System.out.println(String.format("normal: %s.%s", t.getClass().getSimpleName(), method.getName()));
-//
-//            //            Stream.of(method.getGenericParameterTypes())
-//            //                    .filter(type -> type instanceof ParameterizedType)
-//            //                    .map(type -> ((ParameterizedType) type).getActualTypeArguments()[0])
-//            //                    .forEach(type -> System.out.println(String.format("  -> %s", type)));
-//            List parameterizedTypes = Stream.of(method.getGenericParameterTypes())
-//                    .filter(type -> type instanceof ParameterizedType)
-//                    .map(type -> ((ParameterizedType) type).getActualTypeArguments()[0])
-//                    .collect(Collectors.toList());
-//
-//            List<Class> nonParameterizedTypes = Stream.of(method.getParameterTypes())
-//                    .filter(type -> type.getTypeParameters() == null || type.getTypeParameters().length == 0)
-//                    .collect(Collectors.toList());
-//            Object[] params = new Object[nonParameterizedTypes.size() + parameterizedTypes.size()];
-//            for (int i = 0; i < nonParameterizedTypes.size(); i++) {
-//                if (isBaseType(nonParameterizedTypes.get(i))) {
-//                    params[i] = random(nonParameterizedTypes.get(i));
-//                }
-//                else {
-//                    params[i] = generate(nonParameterizedTypes.get(i));
-//                }
-//            }
-//
-//            for (int i = 0; i < parameterizedTypes.size(); i++) {
-//                //                if (isBaseType(parameterizedTypes.get(i))) {
-//                if (isBaseType(
-//                        TypeUtils.getRawType((Type) parameterizedTypes.get(i), (Type) parameterizedTypes.get(i)))) {
-//                    //                    params[i] = random(parameterizedTypes.get(i));
-//                    params[i] = randomCollection(
-//                            TypeUtils.getRawType((Type) parameterizedTypes.get(i), (Type) parameterizedTypes.get(i)),
-//                            Set.class, randomInt(0, 10));
-//                }
-//                else {
-//                    //                    params[i] = generate(parameterizedTypes.get(i));
-//                }
-//            }
-//
-//            if (params.length > 0) {
-//                method.invoke(t, params);
-//            }
-//            return true;
-//        }
-//        else {
-//            return false;
-//        }
-//    }
+    protected Type getParameterType(ParameterizedType type) {
+        return type.getActualTypeArguments()[0];
+    }
 
 }
