@@ -1,5 +1,6 @@
 package net.pladform.random;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -39,14 +40,15 @@ public class BaseGenerator {
     private Random random;
     private Map<String, AtomicLong> idGenerator;
     private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern(DEFAULT_DATE_FORMAT);
-    private List<String> dictionary;
+    private Set<String> dictionary;
+    private String dictionaryFileName = "dict_60000.txt";
 
     // ------------------------
     // constructors
     // ------------------------
 
     public BaseGenerator() {
-        random = new Random();
+        random = new Random(System.currentTimeMillis());
         idGenerator = new HashMap<>();
     }
 
@@ -179,6 +181,10 @@ public class BaseGenerator {
         return randomDouble(DEFAULT_DOUBLE_MIN, DEFAULT_DOUBLE_MAX);
     }
 
+    public Double randomProbability() {
+        return random.nextDouble();
+    }
+
     public Double randomDouble(double lowerBound, double upperBound) {
         if (tryOdds(DEFAULT_CHANCE_OF_NULL_DOUBLE)) {
             return null;
@@ -263,7 +269,7 @@ public class BaseGenerator {
         return iter.next();
     }
 
-    public <T> Collection<T> choose(Collection<T> elements, int count) {
+    public <T> Set<T> choose(Set<T> elements, int count) {
         Validate.notNull(elements);
         Validate.isTrue(elements.size() > 0);
         if (count > elements.size()) {
@@ -296,18 +302,23 @@ public class BaseGenerator {
         }
     }
 
-    public String words(int count) {
+    public String randomWords(int count) {
         Validate.isTrue(count > 0);
         if (dictionary == null) {
             loadDictionary();
         }
-        StringBuilder words = new StringBuilder();
-        words.append(choose(dictionary));
-        for (int i = 1; i < count; i++) {
-            words.append(" ");
-            words.append(choose(dictionary));
-        }
-        return words.toString();
+        Set<String> words = choose(dictionary, count);
+        StringBuilder s = new StringBuilder();
+        words.forEach(word -> s.append(word).append(" "));
+        return s.toString().trim();
+    }
+
+    public String getDictionaryFileName() {
+        return dictionaryFileName;
+    }
+
+    public void setDictionaryFileName(String dictionaryFileName) {
+        this.dictionaryFileName = dictionaryFileName;
     }
 
     // ------------------------
@@ -325,27 +336,14 @@ public class BaseGenerator {
     }
 
     private void loadDictionary() {
-        dictionary = new ArrayList<>(60400);
-        BufferedReader reader = null;
+        dictionary = new HashSet<>();
         try {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            InputStream inputStream = loader.getResourceAsStream("dict.txt");
-            reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line = reader.readLine();
-            while (line != null) {
-                dictionary.add(line);
-                line = reader.readLine();
-            }
-        } catch (IOException e) {
-            // TODO: handle exception
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            List<String> words = IOUtils.readLines(Thread.currentThread().getContextClassLoader().getResourceAsStream(
+                    getDictionaryFileName()));
+            words.forEach(dictionary::add);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

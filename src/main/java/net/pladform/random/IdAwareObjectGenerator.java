@@ -19,7 +19,7 @@ public class IdAwareObjectGenerator extends ObjectGenerator {
         boolean done = processCustom(setterOverrides, method, t);
         if (!done && (method.getName().endsWith("Id")) || method.getName().endsWith("ID")) {
             if (method.getParameterTypes().length == 1 && method.getParameterTypes()[0].equals(Long.class)) {
-                method.invoke(t, nextId());
+                method.invoke(t, nextId(method.getDeclaringClass().getSimpleName()));
                 done = true;
             }
         }

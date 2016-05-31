@@ -61,8 +61,8 @@ public class BaseGeneratorTest {
     }
 
     @Test
-    public void words() throws Exception {
-        System.out.println(g.words(5));
+    public void randomWords() throws Exception {
+        System.out.println(g.randomWords(100));
     }
 
     @Test
