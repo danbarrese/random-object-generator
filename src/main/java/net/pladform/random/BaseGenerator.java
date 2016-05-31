@@ -151,7 +151,7 @@ public class BaseGenerator {
     }
 
     public Set<Integer> randomIntsDistinct(int lowerBound, int upperBound, int count) {
-        Validate.isTrue(count > 0);
+        Validate.isTrue(count >= 0);
         Set<Integer> ints = new HashSet<>();
         while (ints.size() != count) {
             ints.add(randomInt(lowerBound, upperBound));
@@ -328,8 +328,9 @@ public class BaseGenerator {
         dictionary = new ArrayList<>(60400);
         BufferedReader reader = null;
         try {
-            InputStream fis = RootObject.class.getResourceAsStream("dict.txt");
-            reader = new BufferedReader(new InputStreamReader(fis));
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            InputStream inputStream = loader.getResourceAsStream("dict.txt");
+            reader = new BufferedReader(new InputStreamReader(inputStream));
             String line = reader.readLine();
             while (line != null) {
                 dictionary.add(line);

@@ -34,6 +34,13 @@
             <version>2.8.2</version>
         </dependency>
 
+        <!-- for ClassUtils -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>4.1.7.RELEASE</version>
+        </dependency>
+
     </dependencies>
 
     <build>

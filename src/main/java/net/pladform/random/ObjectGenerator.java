@@ -2,6 +2,7 @@ package net.pladform.random;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -71,10 +72,27 @@ public class ObjectGenerator extends BaseGenerator {
         }
     }
 
+    public <T> T generate(Class<T> klass, Map<String, Callable> setterOverrides, String[] constructorArgTypes, Object... constructorArgs) {
+        Validate.notNull(klass);
+        Validate.notNull(constructorArgs);
+        try {
+            Class[] constructorTypes = toClasses(constructorArgTypes, constructorArgs);
+            T t = klass.getConstructor(constructorTypes).newInstance(constructorArgs);
+            Method[] methods = klass.getMethods();
+            for (Method method : methods) {
+                processMethod(method, setterOverrides, t);
+            }
+            return t;
+        } catch (Exception e) {
+            throw new FailedRandomObjectGenerationException(e);
+        }
+    }
+
     public <T, E> Collection<T> randomCollection(Type elementType,
                                                  Class<E> collectionType,
                                                  Map<String, Callable> setterOverrides,
                                                  int count) {
+        Validate.isTrue(count >= 0);
         Validate.notNull(elementType);
         Validate.notNull(collectionType);
         Collection<T> collection;
@@ -156,13 +174,18 @@ public class ObjectGenerator extends BaseGenerator {
         return false;
     }
 
-    protected Class[] toClasses(Object[] objects) {
-        List<Class<?>> classList = Stream.of(objects)
-                .map(Object::getClass)
-                .collect(Collectors.toList());
-        Class[] classesAr = new Class[classList.size()];
-        for (int i = 0; i < classList.size(); i++) {
-            classesAr[i] = classList.get(i);
+    protected Class[] toClasses(Object[] objects) throws ClassNotFoundException {
+        return toClasses(new String[objects.length], objects);
+    }
+
+    protected Class[] toClasses(String[] classNames, Object[] objects) throws ClassNotFoundException {
+        Class[] classesAr = new Class[classNames.length];
+        for (int i = 0; i < classNames.length; i++) {
+            if (classNames[i] != null) {
+                classesAr[i] = ClassUtils.forName(classNames[i], null);
+            } else {
+                classesAr[i] = objects[i].getClass();
+            }
         }
         return classesAr;
     }
