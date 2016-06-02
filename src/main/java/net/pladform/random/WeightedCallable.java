@@ -7,8 +7,8 @@ import java.util.concurrent.Callable;
  */
 public class WeightedCallable<T> {
 
-    public double probability;
-    public Callable<T> callable;
+    public final double probability;
+    public final Callable<T> callable;
 
     public WeightedCallable(double probability, Callable<T> callable) {
         this.probability = probability;

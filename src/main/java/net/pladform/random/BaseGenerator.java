@@ -154,6 +154,7 @@ public class BaseGenerator {
 
     public Set<Integer> randomIntsDistinct(int lowerBound, int upperBound, int count) {
         Validate.isTrue(count >= 0);
+        Validate.isTrue(count <= upperBound - lowerBound + 1);
         Set<Integer> ints = new HashSet<>();
         while (ints.size() != count) {
             ints.add(randomInt(lowerBound, upperBound));
@@ -175,6 +176,16 @@ public class BaseGenerator {
             throw new IllegalStateException("numeric overflow");
         }
         return nextLong(l) + lowerBound;
+    }
+
+    public Set<Long> randomLongsDistinct(long lowerBound, long upperBound, long count) {
+        Validate.isTrue(count >= 0);
+        Validate.isTrue(count <= upperBound - lowerBound);
+        Set<Long> longs = new HashSet<>();
+        while (longs.size() != count) {
+            longs.add(randomLong(lowerBound, upperBound));
+        }
+        return longs;
     }
 
     public Double randomDouble() {

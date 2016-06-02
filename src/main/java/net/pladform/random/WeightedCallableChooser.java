@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -14,20 +15,25 @@ import java.util.stream.Collectors;
 /**
  * @author Dan Barrese
  */
-public class WeightedOperations<T> extends ArrayList<WeightedCallable<T>> {
-    
-    private ObjectGenerator _objectGenerator;
-    private boolean _probabilitiesVerified;
+public class WeightedCallableChooser<T> extends ArrayList<WeightedCallable<T>> {
 
-    public WeightedOperations(ObjectGenerator g) {
+    private static final Object LOCK = new Object();
+    private ObjectGenerator _objectGenerator;
+    private AtomicBoolean _probabilitiesVerified;
+
+    public WeightedCallableChooser(ObjectGenerator g) {
         _objectGenerator = g;
-        _probabilitiesVerified = false;
+        _probabilitiesVerified = new AtomicBoolean(false);
     }
 
     public T doRandomOperation() throws Exception {
-        if (!_probabilitiesVerified) {
-            Validate.isTrue(this.stream().collect(Collectors.summingDouble(value -> value.probability)) == 1.0);
-            _probabilitiesVerified = true;
+        if (!_probabilitiesVerified.get()) {
+            synchronized (LOCK) {
+                if (!_probabilitiesVerified.get()) {
+                    Validate.isTrue(this.stream().collect(Collectors.summingDouble(value -> value.probability)) == 1.0);
+                    _probabilitiesVerified.set(true);
+                }
+            }
         }
         double p = _objectGenerator.randomProbability();
         double sum = 0;
@@ -42,103 +48,103 @@ public class WeightedOperations<T> extends ArrayList<WeightedCallable<T>> {
 
     @Override
     public boolean add(WeightedCallable<T> tCallableWithProbability) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.add(tCallableWithProbability);
     }
 
     @Override
     public void add(int index, WeightedCallable<T> element) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         super.add(index, element);
     }
 
     @Override
     public boolean addAll(Collection<? extends WeightedCallable<T>> c) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.addAll(c);
     }
 
     @Override
     public boolean addAll(int index, Collection<? extends WeightedCallable<T>> c) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.addAll(index, c);
     }
 
     @Override
     public WeightedCallable<T> set(int index, WeightedCallable<T> element) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.set(index, element);
     }
 
     @Override
     public WeightedCallable<T> remove(int index) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.remove(index);
     }
 
     @Override
     public boolean remove(Object o) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.remove(o);
     }
 
     @Override
     public void clear() {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         super.clear();
     }
 
     @Override
     protected void removeRange(int fromIndex, int toIndex) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         super.removeRange(fromIndex, toIndex);
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.removeAll(c);
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.retainAll(c);
     }
 
     @Override
     public ListIterator<WeightedCallable<T>> listIterator(int index) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.listIterator(index);
     }
 
     @Override
     public ListIterator<WeightedCallable<T>> listIterator() {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.listIterator();
     }
 
     @Override
     public Iterator<WeightedCallable<T>> iterator() {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.iterator();
     }
 
     @Override
     public boolean removeIf(Predicate<? super WeightedCallable<T>> filter) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.removeIf(filter);
     }
 
     @Override
     public void replaceAll(UnaryOperator<WeightedCallable<T>> operator) {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         super.replaceAll(operator);
     }
 
     @Override
     public Spliterator<WeightedCallable<T>> spliterator() {
-        _probabilitiesVerified = false;
+        _probabilitiesVerified.set(false);
         return super.spliterator();
     }
 
