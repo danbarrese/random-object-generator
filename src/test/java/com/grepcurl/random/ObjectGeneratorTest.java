@@ -1,16 +1,25 @@
-package net.pladform.random;
+/*
+ * Copyright 2016 Dan Barrese
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.grepcurl.random;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
 
-/**
- * @author Dan Barrese
- */
 public class ObjectGeneratorTest {
 
     public static class MyObject {
@@ -157,11 +166,11 @@ public class ObjectGeneratorTest {
 
     @Test
     public void testCustomFunction() throws Exception {
-        Map<String, Callable> fns = new HashMap<>();
-        fns.put("setName", () -> "blahhh");
-        fns.put("MySubSubObject.setDexterity", () -> "hahaha");
+        SetterOverrides overrides = new SetterOverrides();
+        overrides.add(MyObject2.class, "setName", () -> "blahhh");
+        overrides.add(MySubSubObject.class, "setDexterity", () -> "hahaha");
 
-        MyObject2 a = objectGenerator.generate(MyObject2.class, fns);
+        MyObject2 a = objectGenerator.generate(MyObject2.class, overrides);
         System.out.println(a.getColor());
         Assert.assertEquals("blahhh", a.getName());
         Assert.assertEquals("hahaha", a.getSub().getSubSub().getDexterity());
