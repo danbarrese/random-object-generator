@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.grepcurl.random;
+package com.danbarrese.random;
 
 import java.util.function.Function;
 

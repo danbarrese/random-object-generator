@@ -1,24 +1,23 @@
 /*
  * Copyright 2016 Dan Barrese
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.grepcurl.random;
-
-import org.junit.Assert;
-import org.junit.Test;
+package com.danbarrese.random;
 
 import java.util.Date;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ObjectGeneratorTest {
 
@@ -74,11 +73,11 @@ public class ObjectGeneratorTest {
             this.date = date;
         }
 
-        protected String getHeight() {
+        public String getHeight() {
             return height;
         }
 
-        protected void setHeight(String height) {
+        public void setHeight(String height) {
             this.height = height;
         }
 
@@ -146,11 +145,10 @@ public class ObjectGeneratorTest {
         }
     }
 
-    ObjectGenerator objectGenerator = new IdAwareObjectGenerator();
-
     @Test
     public void generate() throws Exception {
-        MyObject2 a = objectGenerator.generate(MyObject2.class);
+        ObjectGenerator g = new ObjectGenerator();
+        MyObject2 a = g.generate(MyObject2.class);
         Assert.assertNotNull(a.getId());
         Assert.assertNotNull(a.getName());
         Assert.assertNotNull(a.getCount());
@@ -161,16 +159,16 @@ public class ObjectGeneratorTest {
         Assert.assertNotNull(a.getSub().getStrength());
         Assert.assertNotNull(a.getSub().getSubSub());
         Assert.assertNotNull(a.getSub().getSubSub().getDexterity());
-        Assert.assertNull(a.getHeight());
+        Assert.assertNotNull(a.getHeight());
     }
 
     @Test
-    public void testCustomFunction() throws Exception {
-        SetterOverrides overrides = new SetterOverrides();
-        overrides.add(MyObject2.class, "setName", () -> "blahhh");
-        overrides.add(MySubSubObject.class, "setDexterity", () -> "hahaha");
+    public void testCustomField() throws Exception {
+        ObjectGenerator g = new ObjectGenerator();
+        g.config.fieldOverrides.add(MyObject2.class, "name", () -> "blahhh");
+        g.config.fieldOverrides.add(MySubSubObject.class, "dexterity", () -> "hahaha");
 
-        MyObject2 a = objectGenerator.generate(MyObject2.class, overrides);
+        MyObject2 a = g.generate(MyObject2.class);
         System.out.println(a.getColor());
         Assert.assertEquals("blahhh", a.getName());
         Assert.assertEquals("hahaha", a.getSub().getSubSub().getDexterity());

@@ -1,74 +1,69 @@
 /*
  * Copyright 2016 Dan Barrese
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.grepcurl.random;
+package com.danbarrese.random;
 
+import com.danbarrese.random.config.GeneratorConfig;
+import java.io.IOException;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.io.*;
-import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * Responsible for generation of random Strings, Longs, ints, etc.
  */
-@SuppressWarnings({ "unchecked", "unused", "FieldCanBeLocal" })
+@SuppressWarnings({"unchecked", "unused", "FieldCanBeLocal"})
 public class BaseGenerator {
 
-    public String CHARACTER_SET = " \tabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890`~!@#$%^&*()_+[]\\{}|;':\",.<>/?";
-    public String EMAIL_CHAR_LIST = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-    public int DEFAULT_STRING_LENGTH_MIN = 1;
-    public int DEFAULT_STRING_LENGTH_MAX = 25;
-    public int DEFAULT_INT_MIN = 0;
-    public int DEFAULT_INT_MAX = 1000;
-    public long DEFAULT_LONG_MIN = -1000000L;
-    public long DEFAULT_LONG_MAX = 1000000L;
-    public double DEFAULT_DOUBLE_MIN = 0.0;
-    public double DEFAULT_DOUBLE_MAX = 1000000.0;
-    public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    public double DEFAULT_CHANCE_OF_NULL_STRING = 0.0;
-    public double DEFAULT_CHANCE_OF_NULL_INT = 0.0;
-    public double DEFAULT_CHANCE_OF_NULL_LONG = 0.0;
-    public double DEFAULT_CHANCE_OF_NULL_DOUBLE = 0.0;
-    public double DEFAULT_CHANCE_OF_NULL_BOOLEAN = 0.0;
-    public double DEFAULT_CHANCE_OF_NULL_CHAR = 0.0;
-    public double DEFAULT_CHANCE_OF_NULL_DATE = 0.0;
-
-    private Random _random;
-    private Map<String, AtomicLong> _idGenerator;
-    private DateTimeFormatter _dateTimeFormatter = DateTimeFormat.forPattern(DEFAULT_DATE_FORMAT);
-    private Set<String> _dictionary;
-    private String _dictionaryFileName = "dict_60000.txt";
-    private static SimpleDateFormat _sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-    public boolean verbose = false;
+    protected final GeneratorConfig config;
+    private final Random random;
+    private final Map<String, AtomicLong> idGenerator;
+    private final DateTimeFormatter dateTimeFormatter;
+    private Set<String> dictionary;
 
     // ------------------------
     // constructors
     // ------------------------
 
     public BaseGenerator() {
-        _random = new Random(System.currentTimeMillis());
-        _idGenerator = new HashMap<>();
+        this(new GeneratorConfig());
+    }
+
+    public BaseGenerator(GeneratorConfig config) {
+        this.config = config;
+        random = new Random(System.currentTimeMillis());
+        idGenerator = new HashMap<>();
+        dateTimeFormatter = DateTimeFormat.forPattern(config.DEFAULT_DATE_FORMAT);
     }
 
     // ------------------------
@@ -79,32 +74,23 @@ public class BaseGenerator {
         Validate.notNull(type);
         if (type.equals(String.class)) {
             return (T) randomWords(1);
-        }
-        else if (type.equals(Integer.class) || type.equals(int.class)) {
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
             return (T) randomInt();
-        }
-        else if (type.equals(Long.class) || type.equals(long.class)) {
+        } else if (type.equals(Long.class) || type.equals(long.class)) {
             return (T) randomLong();
-        }
-        else if (type.equals(Double.class) || type.equals(double.class)) {
+        } else if (type.equals(Double.class) || type.equals(double.class)) {
             return (T) randomDouble();
-        }
-        else if (type.equals(Date.class)) {
+        } else if (type.equals(Date.class)) {
             return (T) randomDate();
-        }
-        else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+        } else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
             return (T) randomBoolean();
-        }
-        else if (type.equals(Character.class) || type.equals(char.class)) {
+        } else if (type.equals(Character.class) || type.equals(char.class)) {
             return (T) randomChar();
-        }
-        else if (type.equals(BigDecimal.class)) {
+        } else if (type.equals(BigDecimal.class)) {
             return (T) randomBigDecimal();
-        }
-        else if (type.equals(Serializable.class)) {
+        } else if (type.equals(Serializable.class)) {
             return (T) nextId(type);
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("Don't know how to generate a random " + type.getName());
         }
     }
@@ -114,32 +100,23 @@ public class BaseGenerator {
         Validate.notNull(type);
         if (type.equals(String.class)) {
             return true;
-        }
-        else if (type.equals(Integer.class) || type.equals(int.class)) {
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
             return true;
-        }
-        else if (type.equals(Long.class) || type.equals(long.class)) {
+        } else if (type.equals(Long.class) || type.equals(long.class)) {
             return true;
-        }
-        else if (type.equals(Double.class) || type.equals(double.class)) {
+        } else if (type.equals(Double.class) || type.equals(double.class)) {
             return true;
-        }
-        else if (type.equals(Date.class)) {
+        } else if (type.equals(Date.class)) {
             return true;
-        }
-        else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
+        } else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
             return true;
-        }
-        else if (type.equals(Character.class) || type.equals(char.class)) {
+        } else if (type.equals(Character.class) || type.equals(char.class)) {
             return true;
-        }
-        else if (type.equals(BigDecimal.class)) {
+        } else if (type.equals(BigDecimal.class)) {
             return true;
-        }
-        else if (type.equals(Serializable.class)) {
+        } else if (type.equals(Serializable.class)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -149,22 +126,13 @@ public class BaseGenerator {
         return isBaseType(o.getClass());
     }
 
-    @SuppressWarnings("SimplifiableIfStatement")
-    public boolean tryOdds(double odds) {
-        Validate.isTrue(odds >= 0.0 && odds <= 1.0);
-        if (odds == 0.0) {
-            return false;
-        }
-        return randomDouble(0.0, 1.0) <= odds;
-    }
-
     public String randomString() {
-        int len = randomInt(DEFAULT_STRING_LENGTH_MIN, DEFAULT_STRING_LENGTH_MAX);
+        int len = randomInt(config.DEFAULT_STRING_LENGTH_MIN, config.DEFAULT_STRING_LENGTH_MAX);
         return randomString(len);
     }
 
     public String randomString(int len) {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_STRING)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_STRING)) {
             return null;
         }
         if (len == 0) {
@@ -191,7 +159,7 @@ public class BaseGenerator {
     }
 
     public String randomEmailChars(int len) {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_STRING)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_STRING)) {
             return null;
         }
         if (len == 0) {
@@ -205,25 +173,25 @@ public class BaseGenerator {
     }
 
     public Character randomEmailChar() {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_CHAR)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_CHAR)) {
             return null;
         }
-        return EMAIL_CHAR_LIST.charAt(randomInt(0, EMAIL_CHAR_LIST.length() - 1));
+        return config.EMAIL_CHAR_LIST.charAt(randomInt(0, config.EMAIL_CHAR_LIST.length() - 1));
     }
 
     public Character randomChar() {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_CHAR)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_CHAR)) {
             return null;
         }
-        return CHARACTER_SET.charAt(randomInt(0, CHARACTER_SET.length() - 1));
+        return config.CHARACTER_SET.charAt(randomInt(0, config.CHARACTER_SET.length() - 1));
     }
 
     public Integer randomInt() {
-        return randomInt(DEFAULT_INT_MIN, DEFAULT_INT_MAX);
+        return randomInt(config.DEFAULT_INT_MIN, config.DEFAULT_INT_MAX);
     }
 
     public Integer randomInt(int lowerBound, int upperBound) {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_INT)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_INT)) {
             return null;
         }
         Validate.isTrue(upperBound >= lowerBound);
@@ -232,7 +200,7 @@ public class BaseGenerator {
             long l = randomLong(lowerBound, upperBound);
             return (int) l;
         }
-        return _random.nextInt(i) + lowerBound;
+        return random.nextInt(i) + lowerBound;
     }
 
     public Set<Integer> randomIntsDistinct(int lowerBound, int upperBound, int count) {
@@ -246,11 +214,11 @@ public class BaseGenerator {
     }
 
     public Long randomLong() {
-        return randomLong(DEFAULT_LONG_MIN, DEFAULT_LONG_MAX);
+        return randomLong(config.DEFAULT_LONG_MIN, config.DEFAULT_LONG_MAX);
     }
 
     public Long randomLong(long lowerBound, long upperBound) {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_LONG)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_LONG)) {
             return null;
         }
         Validate.isTrue(upperBound >= lowerBound);
@@ -272,23 +240,23 @@ public class BaseGenerator {
     }
 
     public Double randomDouble() {
-        return randomDouble(DEFAULT_DOUBLE_MIN, DEFAULT_DOUBLE_MAX);
+        return randomDouble(config.DEFAULT_DOUBLE_MIN, config.DEFAULT_DOUBLE_MAX);
     }
 
     public BigDecimal randomBigDecimal() {
-        return BigDecimal.valueOf(randomDouble(DEFAULT_DOUBLE_MIN, DEFAULT_DOUBLE_MAX));
+        return BigDecimal.valueOf(randomDouble(config.DEFAULT_DOUBLE_MIN, config.DEFAULT_DOUBLE_MAX));
     }
 
     public Double randomProbability() {
-        return _random.nextDouble();
+        return random.nextDouble();
     }
 
     public Double randomDouble(double lowerBound, double upperBound) {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_DOUBLE)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_DOUBLE)) {
             return null;
         }
         Validate.isTrue(upperBound >= lowerBound);
-        return lowerBound + (upperBound - lowerBound) * _random.nextDouble();
+        return lowerBound + (upperBound - lowerBound) * random.nextDouble();
     }
 
     public Long nextId() {
@@ -297,7 +265,7 @@ public class BaseGenerator {
 
     public Long nextId(String arbitraryGeneratorName) {
         Validate.notNull(arbitraryGeneratorName);
-        return _idGenerator.computeIfAbsent(arbitraryGeneratorName, s -> new AtomicLong(1)).getAndIncrement();
+        return idGenerator.computeIfAbsent(arbitraryGeneratorName, s -> new AtomicLong(1)).getAndIncrement();
     }
 
     public Long nextId(Class<?> type) {
@@ -306,13 +274,13 @@ public class BaseGenerator {
     }
 
     public Date randomDate(String fromDate, String toDate) {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_DATE)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_DATE)) {
             return null;
         }
         Validate.notNull(fromDate);
         Validate.notNull(toDate);
-        long lowerBound = _dateTimeFormatter.parseDateTime(fromDate).getMillis();
-        DateTime upperBoundDateTime = _dateTimeFormatter.parseDateTime(toDate);
+        long lowerBound = dateTimeFormatter.parseDateTime(fromDate).getMillis();
+        DateTime upperBoundDateTime = dateTimeFormatter.parseDateTime(toDate);
         long upperBound = upperBoundDateTime.getMillis();
         long range = upperBound - lowerBound + 1;
         return upperBoundDateTime.minus(randomLong(0, range)).toDate();
@@ -321,13 +289,13 @@ public class BaseGenerator {
     public Date randomDate(String fromDate) {
         Validate.notNull(fromDate);
         DateTime now = new DateTime(new Date());
-        return randomDate(fromDate, now.toString(_dateTimeFormatter));
+        return randomDate(fromDate, now.toString(dateTimeFormatter));
     }
 
     public Date randomDate() {
         DateTime epoch = new DateTime(0L);
         DateTime now = new DateTime(new Date());
-        return randomDate(epoch.toString(_dateTimeFormatter), now.toString(_dateTimeFormatter));
+        return randomDate(epoch.toString(dateTimeFormatter), now.toString(dateTimeFormatter));
     }
 
     public Date randomDateInLastNDays(int n) {
@@ -337,18 +305,17 @@ public class BaseGenerator {
         c.add(Calendar.DAY_OF_YEAR, randomInt(-1 * n, -1));
         Date startDate = c.getTime();
 
-        String startDateString = _sdf.format(startDate);
+        String startDateString = config.sdf.format(startDate);
         try {
-            return _sdf.parse(startDateString);
-        }
-        catch (ParseException e) {
+            return config.sdf.parse(startDateString);
+        } catch (ParseException e) {
             e.printStackTrace();
             throw new RuntimeException("Internal error formatting date during JUnit test.");
         }
     }
 
     public Boolean randomBoolean() {
-        if (tryOdds(DEFAULT_CHANCE_OF_NULL_BOOLEAN)) {
+        if (tryOdds(config.DEFAULT_CHANCE_OF_NULL_BOOLEAN)) {
             return null;
         }
         return randomInt(0, 1) == 1;
@@ -365,11 +332,9 @@ public class BaseGenerator {
         Validate.isTrue(elements.size() > 0);
         if (elements instanceof List) {
             return choose((List<T>) elements);
-        }
-        else if (elements instanceof Set) {
+        } else if (elements instanceof Set) {
             return choose((Set<T>) elements);
-        }
-        else {
+        } else {
             throw new IllegalArgumentException(
                     "Don't know how to choose from collection of type: " + elements.getClass());
         }
@@ -414,38 +379,50 @@ public class BaseGenerator {
     }
 
     public <T> T chooseOrCreateNew(Collection<T> elements,
-            double oddsToCreateNew,
-            Callable<T> createNewFunction) throws Exception {
+                                   double oddsToCreateNew,
+                                   Callable<T> createNewFunction) throws Exception {
         if (tryOdds(oddsToCreateNew)) {
             T t = createNewFunction.call();
             elements.add(t);
             return t;
-        }
-        else {
+        } else {
             return choose(elements);
         }
     }
 
     public String randomWords(int count) {
         Validate.isTrue(count > 0);
-        if (_dictionary == null) {
+        if (dictionary == null) {
             _loadDictionary();
         }
-        Set<String> words = choose(_dictionary, count);
+        Set<String> words = choose(dictionary, count);
         StringBuilder s = new StringBuilder();
         words.forEach(word -> s.append(word).append(" "));
         return s.toString().trim();
     }
 
     public String getDictionaryFileName() {
-        return _dictionaryFileName;
+        return config.dictionaryFileName;
     }
 
     public void setDictionaryFileName(String dictionaryFileName) {
-        this._dictionaryFileName = dictionaryFileName;
+        this.config.dictionaryFileName = dictionaryFileName;
     }
-    
-    public void log(String s) {
+
+    // -------------------------------
+    // protected methods
+    // -------------------------------
+
+    @SuppressWarnings("SimplifiableIfStatement")
+    protected boolean tryOdds(double odds) {
+        Validate.isTrue(odds >= 0.0 && odds <= 1.0);
+        if (odds == 0.0) {
+            return false;
+        }
+        return randomDouble(0.0, 1.0) <= odds;
+    }
+
+    protected void log(String s) {
         System.out.println(s);
     }
 
@@ -457,7 +434,7 @@ public class BaseGenerator {
         // error checking and 2^x checking removed for simplicity.
         long bits, val;
         do {
-            bits = (_random.nextLong() << 1) >>> 1;
+            bits = (random.nextLong() << 1) >>> 1;
             val = bits % n;
         }
         while (bits - val + (n - 1) < 0L);
@@ -465,13 +442,13 @@ public class BaseGenerator {
     }
 
     private void _loadDictionary() {
-        _dictionary = new HashSet<>();
+        dictionary = new HashSet<>();
         try {
-            List<String> words = IOUtils.readLines(Thread.currentThread().getContextClassLoader().getResourceAsStream(
-                    getDictionaryFileName()));
-            words.forEach(_dictionary::add);
-        }
-        catch (IOException e) {
+            List<String> words = IOUtils.readLines(
+                    Thread.currentThread().getContextClassLoader().getResourceAsStream(getDictionaryFileName()),
+                    StandardCharsets.UTF_8);
+            dictionary.addAll(words);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

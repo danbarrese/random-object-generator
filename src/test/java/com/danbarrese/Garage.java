@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.grepcurl;
+package com.danbarrese;
 
-public class Child {
+public class Garage extends Room {
 
-    private Parent parent;
+    private int cars;
 
-    public Parent getParent() { return parent; }
-    public void setParent(Parent parent) { this.parent = parent; }
+    public int getCars() { return cars; }
+    public void setCars(int cars) { this.cars = cars; }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Child{");
-        sb.append("parent=").append(System.identityHashCode(parent));
+        final StringBuilder sb = new StringBuilder("Garage{");
+        sb.append("cars=").append(cars);
         sb.append('}');
         return sb.toString();
     }

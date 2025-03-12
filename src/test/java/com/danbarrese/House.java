@@ -13,36 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.grepcurl;
+package com.danbarrese;
 
-public class Chair {
+import java.util.Set;
 
-    private boolean comfy;
-    private double cost;
+public class House {
 
-    public Chair() {
-    }
+    private String address;
+    private Set<Room> rooms;
 
-    public Chair(boolean comfy) {
-        this.comfy = comfy;
-    }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
-    public Chair(boolean comfy, double cost) {
-        this.comfy = comfy;
-        this.cost = cost;
-    }
-
-    public boolean isComfy() { return comfy; }
-    public void setComfy(boolean comfy) { this.comfy = comfy; }
-
-    public double getCost() { return cost; }
-    public void setCost(double cost) { this.cost = cost; }
+    public Set<Room> getRooms() { return rooms; }
+    public void setRooms(Set<Room> rooms) { this.rooms = rooms; }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Chair{");
-        sb.append("comfy=").append(comfy);
-        sb.append(", cost=").append(cost);
+        final StringBuilder sb = new StringBuilder("House{");
+        sb.append("address='").append(address).append('\'');
+        sb.append(", rooms=").append(rooms);
         sb.append('}');
         return sb.toString();
     }

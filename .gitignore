@@ -6,4 +6,4 @@ bin
 workspace.xml
 .idea
 *.iml
-
+*.DS_Store
